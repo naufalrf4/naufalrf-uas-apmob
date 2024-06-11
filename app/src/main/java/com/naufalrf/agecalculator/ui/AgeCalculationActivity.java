@@ -1,5 +1,6 @@
 package com.naufalrf.agecalculator.ui;
 
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
@@ -8,13 +9,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import com.google.android.material.textfield.TextInputEditText;
 import com.naufalrf.agecalculator.R;
 import java.util.Calendar;
 
 public class AgeCalculationActivity extends AppCompatActivity {
 
-    private EditText birthYearEditText;
+    private TextInputEditText birthDateEditText;
     private TextView ageResultTextView;
+    private Calendar birthDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,36 +28,46 @@ public class AgeCalculationActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        birthYearEditText = findViewById(R.id.birthYearEditText);
+        birthDateEditText = findViewById(R.id.birthDateEditText);
         ageResultTextView = findViewById(R.id.ageResultTextView);
 
-        birthYearEditText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                showKeyboard(v);
-            }
-        });
+        birthDateEditText.setOnClickListener(v -> showDatePickerDialog());
+
+        birthDate = Calendar.getInstance();
+    }
+
+    private void showDatePickerDialog() {
+        int year = birthDate.get(Calendar.YEAR);
+        int month = birthDate.get(Calendar.MONTH);
+        int day = birthDate.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year1, month1, dayOfMonth) -> {
+            birthDate.set(year1, month1, dayOfMonth);
+            birthDateEditText.setText(String.format("%02d/%02d/%04d", dayOfMonth, month1 + 1, year1));
+        }, year, month, day);
+
+        datePickerDialog.show();
     }
 
     public void onCalculateAgeClick(View view) {
-        String birthYearStr = birthYearEditText.getText().toString();
-        if (!birthYearStr.isEmpty()) {
-            int birthYear = Integer.parseInt(birthYearStr);
-            int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-            int age = currentYear - birthYear;
-            ageResultTextView.setText("Usia Anda sekarang adalah " + age + " tahun");
-            hideKeyboard(view);
-        } else {
-            ageResultTextView.setText("Harap masukkan tahun lahir Anda");
+        if (birthDateEditText.getText().toString().isEmpty()) {
+            ageResultTextView.setText("Silakan masukkan tanggal lahir yang valid");
+            return;
         }
+
+        Calendar today = Calendar.getInstance();
+        int age = today.get(Calendar.YEAR) - birthDate.get(Calendar.YEAR);
+
+        if (today.get(Calendar.DAY_OF_YEAR) < birthDate.get(Calendar.DAY_OF_YEAR)) {
+            age--;
+        }
+
+        ageResultTextView.setText("Usia Anda: " + age + " tahun");
+        hideKeyboard(view);
     }
 
     private void hideKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-    }
-
-    private void showKeyboard(View view) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
     }
 }
